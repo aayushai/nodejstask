@@ -1,7 +1,7 @@
 // controllers/stockController.js
 const csv = require('csv-parser');
 const fs = require('fs');
-const Stock = require('../models/Stock');
+const Stock = require('../models/stock');
 
 // File upload and data validation
 exports.uploadCSV = async (req, res) => {
