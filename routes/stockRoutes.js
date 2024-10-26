@@ -6,8 +6,8 @@ const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
 
 router.post('/upload', upload.single('file'), stockController.uploadCSV);
-router.get('/api/highest_volume', stockController.getHighestVolume);
-router.get('/api/average_close', stockController.getAverageClose);
-router.get('/api/average_vwap', stockController.getAverageVWAP);
+router.get('/highest_volume', stockController.getHighestVolume);
+router.get('/average_close', stockController.getAverageClose);
+router.get('/average_vwap', stockController.getAverageVWAP);
 
 module.exports = router;

@@ -62,7 +62,7 @@ const formatRow = (row) => ({
   vwap: parseFloat(row['VWAP']),
   volume: parseInt(row['Volume']),
   turnover: parseFloat(row['Turnover']),
-  trades: parseInt(row['Trades']),
+  trades: isNaN(parseInt(row['Trades'])) ? 0 : parseInt(row['Trades']),
   deliverable: row['Deliverable Volume'] ? parseInt(row['Deliverable Volume']) : null,
   percent_deliverable: row['%Deliverable'] ? parseFloat(row['%Deliverable']) : null
 });
