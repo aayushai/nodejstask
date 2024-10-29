@@ -1,4 +1,3 @@
-// routes/stockRoutes.js
 const express = require('express');
 const multer = require('multer');
 const stockController = require('../controllers/stockController');

@@ -3,19 +3,30 @@ const csv = require('csv-parser');
 const fs = require('fs');
 const Stock = require('../models/stock');
 
-
+// Upload CSV and validate data
 exports.uploadCSV = async (req, res) => {
   if (!req.file || req.file.mimetype !== 'text/csv') {
     return res.status(400).json({ error: 'Please upload a CSV file.' });
   }
 
   const results = [];
+  const requiredColumns = [
+    'Date', 'Symbol', 'Series', 'Prev Close', 'Open', 'High', 'Low', 'Last', 'Close',
+    'VWAP', 'Volume', 'Turnover', 'Trades', 'Deliverable Volume', '%Deliverable'
+  ];
+  
   let successful = 0;
   let failed = 0;
   const errors = [];
 
   fs.createReadStream(req.file.path)
     .pipe(csv())
+    .on('headers', (headers) => {
+      const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+      if (missingColumns.length > 0) {
+        res.status(400).json({ error: `Missing required columns: ${missingColumns.join(', ')}` });
+      }
+    })
     .on('data', (row) => {
       const isValid = validateRow(row);
       if (isValid) {
@@ -29,7 +40,7 @@ exports.uploadCSV = async (req, res) => {
     .on('end', async () => {
       try {
         await Stock.insertMany(results);
-        fs.unlinkSync(req.file.path);  // Clean up file
+        fs.unlinkSync(req.file.path);
         res.json({
           total_records: results.length + failed,
           successful_records: successful,
@@ -37,20 +48,30 @@ exports.uploadCSV = async (req, res) => {
           errors
         });
       } catch (err) {
-        console.error("Database insertion error details:", err);
         res.status(500).json({ error: "Database insertion error", details: err.message });
       }
     });
 };
 
-// Row validation function
+// Row validation
 const validateRow = (row) => {
-  // Custom validation logic for each field
-  return !isNaN(Date.parse(row['Date'])) && !isNaN(parseFloat(row['Prev Close']));
+  return !isNaN(Date.parse(row['Date'])) && 
+         !isNaN(parseFloat(row['Prev Close'])) && 
+         !isNaN(parseFloat(row['Open'])) && 
+         !isNaN(parseFloat(row['High'])) && 
+         !isNaN(parseFloat(row['Low'])) && 
+         !isNaN(parseFloat(row['Last'])) && 
+         !isNaN(parseFloat(row['Close'])) && 
+         !isNaN(parseFloat(row['VWAP'])) && 
+         !isNaN(parseInt(row['Volume'])) && 
+         !isNaN(parseFloat(row['Turnover'])) && 
+         !isNaN(parseInt(row['Trades'])) && 
+         (row['Deliverable Volume'] ? !isNaN(parseInt(row['Deliverable Volume'])) : true) && 
+         (row['%Deliverable'] ? !isNaN(parseFloat(row['%Deliverable'])) : true);
 };
 
 const formatRow = (row) => ({
-  date: row['Date'],
+  date: new Date(row['Date']),
   symbol: row['Symbol'],
   series: row['Series'],
   prev_close: parseFloat(row['Prev Close']),
@@ -67,7 +88,9 @@ const formatRow = (row) => ({
   percent_deliverable: row['%Deliverable'] ? parseFloat(row['%Deliverable']) : null
 });
 
-// Highest Volume
+// APIs
+
+// Get highest volume
 exports.getHighestVolume = async (req, res) => { 
   const { start_date, end_date, symbol } = req.query;
   const filter = {};
@@ -78,7 +101,7 @@ exports.getHighestVolume = async (req, res) => {
   res.json({ highest_volume: result });
 };
 
-// Average Close Price
+// Get average close price
 exports.getAverageClose = async (req, res) => {
   const { start_date, end_date, symbol } = req.query;
   const match = { symbol, date: { $gte: new Date(start_date), $lte: new Date(end_date) } };
@@ -87,10 +110,10 @@ exports.getAverageClose = async (req, res) => {
     { $match: match },
     { $group: { _id: null, average_close: { $avg: '$close' } } }
   ]);
-  res.json({ average_close: result.average_close });
+  res.json({ average_close: result ? result.average_close : null });
 };
 
-// Average VWAP
+// Get average VWAP
 exports.getAverageVWAP = async (req, res) => {
   const { start_date, end_date, symbol } = req.query;
   const match = { date: { $gte: new Date(start_date), $lte: new Date(end_date) } };
@@ -100,7 +123,7 @@ exports.getAverageVWAP = async (req, res) => {
     { $match: match },
     { $group: { _id: null, average_vwap: { $avg: '$vwap' } } }
   ]);
-  res.json({ average_vwap: result.average_vwap });
+  res.json({ average_vwap: result ? result.average_vwap : null });
 };
 
 

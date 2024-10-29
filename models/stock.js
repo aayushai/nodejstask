@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 const stockSchema = new mongoose.Schema({
-    date: String,
+    date: Date,
     symbol: String,
     series: String,
     prev_close: Number,
@@ -19,4 +19,4 @@ const stockSchema = new mongoose.Schema({
     percent_deliverable: Number,
 });
 
-module.exports = mongoose.model('Stock', stockSchema);
+module.exports = mongoose.model('Stock', stockSchema, 'stock_data');
